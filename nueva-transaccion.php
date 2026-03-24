@@ -6,16 +6,17 @@ $db = getDB();
 
 $errores = [];
 $exito   = false;
-$datos   = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'fecha' => date('Y-m-d')];
+$datos   = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'detalles' => '', 'fecha' => date('Y-m-d')];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo         = $_POST['tipo']         ?? '';
     $categoria_id = (int)($_POST['categoria_id'] ?? 0);
     $monto        = $_POST['monto']        ?? '';
     $cantidad     = $_POST['cantidad']     ?? '';
+    $detalles     = trim($_POST['detalles'] ?? '');
     $fecha        = $_POST['fecha']        ?? '';
 
-    $datos = compact('tipo', 'categoria_id', 'monto', 'cantidad', 'fecha');
+    $datos = compact('tipo', 'categoria_id', 'monto', 'cantidad', 'detalles', 'fecha');
 
     if (!in_array($tipo, ['ingreso', 'egreso'], true)) $errores[] = 'Selecciona un tipo válido.';
     if ($categoria_id <= 0) {
@@ -37,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errores)) {
-        $stmt = $db->prepare('INSERT INTO transacciones (usuario_id,tipo,categoria_id,monto,cantidad,fecha) VALUES (?,?,?,?,?,?)');
-        $stmt->execute([$_SESSION['usuario_id'], $tipo, $categoria_id, round($montoF,2), round($cantidadF,3), $fecha]);
+        $stmt = $db->prepare('INSERT INTO transacciones (usuario_id,tipo,categoria_id,monto,cantidad,detalles,fecha) VALUES (?,?,?,?,?,?,?)');
+        $stmt->execute([$_SESSION['usuario_id'], $tipo, $categoria_id, round($montoF,2), round($cantidadF,3), $detalles ?: null, $fecha]);
         $exito = true;
-        $datos = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'fecha' => date('Y-m-d')];
+        $datos = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'detalles' => '', 'fecha' => date('Y-m-d')];
     }
 }
 
@@ -131,6 +132,17 @@ require '_layout.php';
                      step="0.001" min="0.001" placeholder="1.000"
                      value="<?= h($datos['cantidad']) ?>" required>
             </div>
+          </div>
+
+          <!-- Detalles (opcional) -->
+          <div class="mb-3">
+            <label for="detalles" class="form-label">
+              DETALLES
+              <span class="text-muted fw-normal ms-1" style="font-size:.72rem;text-transform:none;letter-spacing:0">(opcional)</span>
+            </label>
+            <textarea class="form-control" name="detalles" id="detalles"
+                      rows="2" placeholder="Ej: 2kg de arroz, 1 botella aceite…"
+                      style="resize:none"><?= h($datos['detalles']) ?></textarea>
           </div>
 
           <!-- Fecha -->

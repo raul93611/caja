@@ -172,9 +172,13 @@ function renderEditForm(t, cats) {
         <input type="number" class="form-control" id="edit-cantidad" value="${t.cantidad}" step="0.001" min="0.001">
       </div>
     </div>
-    <div class="mb-1">
+    <div class="mb-3">
       <label class="form-label">Fecha</label>
       <input type="date" class="form-control" id="edit-fecha" value="${t.fecha}" max="${new Date().toISOString().split('T')[0]}">
+    </div>
+    <div class="mb-1">
+      <label class="form-label">Detalles <span class="text-muted fw-normal" style="font-size:.75rem">(opcional)</span></label>
+      <textarea class="form-control" id="edit-detalles" rows="2" style="resize:none" placeholder="Ej: 2kg de arroz…">${t.detalles || ''}</textarea>
     </div>`;
 
   // Update categories when tipo changes
@@ -192,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const monto    = document.getElementById('edit-monto')?.value;
     const cantidad = document.getElementById('edit-cantidad')?.value;
     const fecha    = document.getElementById('edit-fecha')?.value;
+    const detalles = document.getElementById('edit-detalles')?.value ?? '';
 
     if (!id || !tipo || !catId || !monto || !cantidad || !fecha) {
       showToast('Completa todos los campos.', 'warning'); return;
@@ -202,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando…';
 
     try {
-      const res = await apiRequest('actualizar', { id, tipo, categoria_id: catId, monto, cantidad, fecha });
+      const res = await apiRequest('actualizar', { id, tipo, categoria_id: catId, monto, cantidad, detalles, fecha });
       if (res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('modalEdit')).hide();
         showToast('Transacción actualizada.');

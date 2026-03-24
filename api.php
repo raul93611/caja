@@ -40,7 +40,7 @@ switch ($action) {
     // ── Obtener una transacción para editar ──────────────────
     case 'obtener':
         $id = (int)($_POST['id'] ?? 0);
-        $stmt = $db->prepare('SELECT id, tipo, categoria_id, monto, cantidad, fecha FROM transacciones WHERE id = ? AND usuario_id = ?');
+        $stmt = $db->prepare('SELECT id, tipo, categoria_id, monto, cantidad, detalles, fecha FROM transacciones WHERE id = ? AND usuario_id = ?');
         $stmt->execute([$id, $uid]);
         $row = $stmt->fetch();
         if (!$row) {
@@ -57,6 +57,7 @@ switch ($action) {
         $catId    = (int)($_POST['categoria_id'] ?? 0);
         $monto    = $_POST['monto']        ?? '';
         $cantidad = $_POST['cantidad']     ?? '';
+        $detalles = trim($_POST['detalles'] ?? '');
         $fecha    = $_POST['fecha']        ?? '';
 
         // Validaciones
@@ -91,10 +92,10 @@ switch ($action) {
 
         $stmt = $db->prepare('
             UPDATE transacciones
-            SET tipo = ?, categoria_id = ?, monto = ?, cantidad = ?, fecha = ?
+            SET tipo = ?, categoria_id = ?, monto = ?, cantidad = ?, detalles = ?, fecha = ?
             WHERE id = ? AND usuario_id = ?
         ');
-        $stmt->execute([$tipo, $catId, round($montoF, 2), round($cantidadF, 3), $fecha, $id, $uid]);
+        $stmt->execute([$tipo, $catId, round($montoF, 2), round($cantidadF, 3), $detalles ?: null, $fecha, $id, $uid]);
         echo json_encode(['ok' => true]);
         break;
 

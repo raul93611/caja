@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `transacciones` (
   `categoria_id` INT UNSIGNED  NOT NULL,
   `monto`        DECIMAL(10,2) NOT NULL,
   `cantidad`     DECIMAL(10,3) NOT NULL DEFAULT '1.000',
+  `detalles`     TEXT          NULL,
   `fecha`        DATE          NOT NULL,
   `creado_en`    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -77,3 +78,8 @@ INSERT INTO `usuarios` (`nombre`, `email`, `password_hash`) VALUES
    '$2y$12$uTDSmkEPRGBbg5L5PkBrLeE1fYZmQ2YXbpf.KNkbm4KiG0BbKK3Gy');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ------------------------------------------------------------
+-- Si la base de datos ya existe, ejecuta solo esta línea:
+-- ALTER TABLE `transacciones` ADD COLUMN `detalles` TEXT NULL AFTER `cantidad`;
+-- ------------------------------------------------------------
