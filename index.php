@@ -5,26 +5,21 @@ requireLogin();
 $db  = getDB();
 $hoy = date('Y-m-d');
 
-// KPIs del día
 $stmt = $db->prepare('
     SELECT
-        COALESCE(SUM(CASE WHEN tipo = "ingreso" THEN monto ELSE 0 END), 0) AS total_ingresos,
-        COALESCE(SUM(CASE WHEN tipo = "egreso"  THEN monto ELSE 0 END), 0) AS total_egresos
-    FROM transacciones
-    WHERE fecha = ?
+        COALESCE(SUM(CASE WHEN tipo="ingreso" THEN monto ELSE 0 END),0) AS ingresos,
+        COALESCE(SUM(CASE WHEN tipo="egreso"  THEN monto ELSE 0 END),0) AS egresos
+    FROM transacciones WHERE fecha = ?
 ');
 $stmt->execute([$hoy]);
-$kpi = $stmt->fetch();
-$balance = $kpi['total_ingresos'] - $kpi['total_egresos'];
+$kpi     = $stmt->fetch();
+$balance = $kpi['ingresos'] - $kpi['egresos'];
 
-// Últimas 10 transacciones
 $stmt = $db->prepare('
-    SELECT t.id, t.tipo, t.monto, t.cantidad, t.fecha,
-           c.nombre AS categoria
+    SELECT t.id, t.tipo, t.monto, t.fecha, c.nombre AS categoria
     FROM transacciones t
     JOIN categorias c ON c.id = t.categoria_id
-    ORDER BY t.creado_en DESC
-    LIMIT 10
+    ORDER BY t.creado_en DESC LIMIT 10
 ');
 $stmt->execute();
 $ultimas = $stmt->fetchAll();
@@ -33,73 +28,94 @@ $titulo = 'Inicio';
 require '_layout.php';
 ?>
 
-<div class="section-title">📅 Resumen de hoy <small style="font-size:.75rem;color:#5f6368;"><?= date('d/m/Y') ?></small></div>
-
-<div class="kpi-grid">
-  <div class="kpi ingreso">
-    <div class="etiqueta">Ingresos</div>
-    <div class="valor"><?= moneda($kpi['total_ingresos']) ?></div>
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Resumen del día — <?= date('l d \d\e F, Y', strtotime($hoy)) ?></p>
   </div>
-  <div class="kpi egreso">
-    <div class="etiqueta">Egresos</div>
-    <div class="valor"><?= moneda($kpi['total_egresos']) ?></div>
-  </div>
-  <div class="kpi balance">
-    <div class="etiqueta">Balance</div>
-    <div class="valor" style="color:<?= $balance >= 0 ? '#188038' : '#c5221f' ?>">
-      <?= moneda($balance) ?>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <h2>Últimas 10 transacciones</h2>
-
-  <?php if (empty($ultimas)): ?>
-    <p style="color:#5f6368;font-size:.9rem;text-align:center;padding:1rem 0;">
-      Aún no hay transacciones registradas.
-      <br><br>
-      <a href="nueva-transaccion.php" class="btn btn-primary">+ Registrar primera transacción</a>
-    </p>
-  <?php else: ?>
-    <div class="tabla-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Categoría</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($ultimas as $t): ?>
-          <tr>
-            <td><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
-            <td><?= h($t['categoria']) ?></td>
-            <td>
-              <span class="badge badge-<?= $t['tipo'] ?>">
-                <?= $t['tipo'] === 'ingreso' ? 'Ingreso' : 'Egreso' ?>
-              </span>
-            </td>
-            <td style="font-weight:600;color:<?= $t['tipo'] === 'ingreso' ? '#188038' : '#c5221f' ?>">
-              <?= moneda($t['monto']) ?>
-            </td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <div style="text-align:right;margin-top:.75rem;">
-      <a href="transacciones.php" class="btn btn-outline btn-sm">Ver todas →</a>
-    </div>
-  <?php endif; ?>
-</div>
-
-<div style="text-align:center;margin-top:.5rem;">
-  <a href="nueva-transaccion.php" class="btn btn-success" style="min-width:220px;">
-    ➕ Nueva transacción
+  <a href="nueva-transaccion.php" class="btn btn-success">
+    <i class="bi bi-plus-lg me-1"></i> Nueva transacción
   </a>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="kpi-card kpi-income">
+      <div class="kpi-label">Ingresos hoy</div>
+      <div class="kpi-value"><?= moneda($kpi['ingresos']) ?></div>
+      <div class="kpi-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="kpi-card kpi-expense">
+      <div class="kpi-label">Egresos hoy</div>
+      <div class="kpi-value"><?= moneda($kpi['egresos']) ?></div>
+      <div class="kpi-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="kpi-card kpi-balance">
+      <div class="kpi-label">Balance</div>
+      <div class="kpi-value" style="color:<?= $balance >= 0 ? 'var(--success-color)' : 'var(--danger-color)' ?>">
+        <?= moneda($balance) ?>
+      </div>
+      <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Últimas transacciones -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-clock-history me-2"></i>Últimas 10 transacciones</span>
+    <a href="transacciones.php" class="btn btn-sm btn-outline-secondary">
+      Ver todas <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <?php if (empty($ultimas)): ?>
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Aún no hay transacciones registradas.</p>
+        <a href="nueva-transaccion.php" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus-lg me-1"></i> Registrar primera transacción
+        </a>
+      </div>
+    <?php else: ?>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th class="col-mobile-hide">Fecha</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th class="text-end">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($ultimas as $t): ?>
+            <tr>
+              <td class="text-muted-sm col-mobile-hide"><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
+              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;"><?= h($t['categoria']) ?></td>
+              <td>
+                <?php if ($t['tipo'] === 'ingreso'): ?>
+                  <span class="badge-income"><i class="bi bi-arrow-up"></i> Ingreso</span>
+                <?php else: ?>
+                  <span class="badge-expense"><i class="bi bi-arrow-down"></i> Egreso</span>
+                <?php endif; ?>
+              </td>
+              <td class="text-end <?= $t['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
+                <?= moneda($t['monto']) ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
+  </div>
 </div>
 
 <?php require '_layout_end.php'; ?>

@@ -4,19 +4,9 @@ requireLogin();
 
 $db = getDB();
 
-// Cargar todas las categorías para el JS
-$stmt = $db->query('SELECT id, nombre, tipo FROM categorias ORDER BY tipo, nombre');
-$categorias_todas = $stmt->fetchAll();
-
-$errores  = [];
-$exito    = false;
-$datos    = [
-    'tipo'         => 'ingreso',
-    'categoria_id' => '',
-    'monto'        => '',
-    'cantidad'     => '1',
-    'fecha'        => date('Y-m-d'),
-];
+$errores = [];
+$exito   = false;
+$datos   = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'fecha' => date('Y-m-d')];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipo         = $_POST['tipo']         ?? '';
@@ -27,52 +17,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $datos = compact('tipo', 'categoria_id', 'monto', 'cantidad', 'fecha');
 
-    // Validaciones
-    if (!in_array($tipo, ['ingreso', 'egreso'], true)) {
-        $errores[] = 'Selecciona un tipo válido (Ingreso o Egreso).';
-    }
-
+    if (!in_array($tipo, ['ingreso', 'egreso'], true)) $errores[] = 'Selecciona un tipo válido.';
     if ($categoria_id <= 0) {
         $errores[] = 'Selecciona una categoría.';
     } else {
-        $stmtCat = $db->prepare('SELECT id FROM categorias WHERE id = ? AND tipo = ?');
-        $stmtCat->execute([$categoria_id, $tipo]);
-        if (!$stmtCat->fetch()) {
-            $errores[] = 'La categoría no corresponde al tipo seleccionado.';
-        }
+        $st = $db->prepare('SELECT id FROM categorias WHERE id = ? AND tipo = ?');
+        $st->execute([$categoria_id, $tipo]);
+        if (!$st->fetch()) $errores[] = 'Categoría no válida para el tipo seleccionado.';
     }
+    $montoF = filter_var(str_replace(',', '.', $monto), FILTER_VALIDATE_FLOAT);
+    if (!$montoF || $montoF <= 0) $errores[] = 'El monto debe ser mayor a cero.';
 
-    $montoFloat = filter_var(str_replace(',', '.', $monto), FILTER_VALIDATE_FLOAT);
-    if ($montoFloat === false || $montoFloat <= 0) {
-        $errores[] = 'El monto debe ser un número mayor a cero.';
-    }
+    $cantidadF = filter_var(str_replace(',', '.', $cantidad), FILTER_VALIDATE_FLOAT);
+    if (!$cantidadF || $cantidadF <= 0) $errores[] = 'La cantidad debe ser mayor a cero.';
 
-    $cantidadFloat = filter_var(str_replace(',', '.', $cantidad), FILTER_VALIDATE_FLOAT);
-    if ($cantidadFloat === false || $cantidadFloat <= 0) {
-        $errores[] = 'La cantidad debe ser un número mayor a cero.';
-    }
-
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) || !checkdate(
-        (int)substr($fecha, 5, 2),
-        (int)substr($fecha, 8, 2),
-        (int)substr($fecha, 0, 4)
-    )) {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) ||
+        !checkdate((int)substr($fecha,5,2),(int)substr($fecha,8,2),(int)substr($fecha,0,4))) {
         $errores[] = 'La fecha no es válida.';
     }
 
     if (empty($errores)) {
-        $stmt = $db->prepare('
-            INSERT INTO transacciones (usuario_id, tipo, categoria_id, monto, cantidad, fecha)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ');
-        $stmt->execute([
-            $_SESSION['usuario_id'],
-            $tipo,
-            $categoria_id,
-            round($montoFloat, 2),
-            round($cantidadFloat, 3),
-            $fecha,
-        ]);
+        $stmt = $db->prepare('INSERT INTO transacciones (usuario_id,tipo,categoria_id,monto,cantidad,fecha) VALUES (?,?,?,?,?,?)');
+        $stmt->execute([$_SESSION['usuario_id'], $tipo, $categoria_id, round($montoF,2), round($cantidadF,3), $fecha]);
         $exito = true;
         $datos = ['tipo' => 'ingreso', 'categoria_id' => '', 'monto' => '', 'cantidad' => '1', 'fecha' => date('Y-m-d')];
     }
@@ -82,116 +48,162 @@ $titulo = 'Nueva transacción';
 require '_layout.php';
 ?>
 
-<div class="section-title">➕ Nueva transacción</div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Nueva transacción</h1>
+    <p class="page-subtitle">Registra un ingreso o egreso</p>
+  </div>
+</div>
 
 <?php if ($exito): ?>
-  <div class="alert alert-success">✅ Transacción registrada correctamente.</div>
-<?php endif; ?>
-
-<?php if ($errores): ?>
-  <div class="alert alert-error">
-    <?php foreach ($errores as $e): ?>
-      <div>• <?= h($e) ?></div>
-    <?php endforeach; ?>
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div><strong>¡Listo!</strong> Transacción registrada correctamente.</div>
   </div>
 <?php endif; ?>
 
-<div class="card">
-  <form method="POST" action="" id="formTransaccion" novalidate>
+<?php if ($errores): ?>
+  <div class="alert alert-danger d-flex align-items-start gap-2 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
+    <div>
+      <?php foreach ($errores as $e): ?>
+        <div>• <?= h($e) ?></div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+<?php endif; ?>
 
-    <!-- Tipo -->
-    <input type="hidden" name="tipo" id="tipo" value="<?= h($datos['tipo']) ?>">
-    <div class="form-group">
-      <label>Tipo de transacción</label>
-      <div style="display:flex;gap:.75rem;">
-        <button type="button" id="btn-ingreso" onclick="setTipo('ingreso')"
-          style="flex:1;padding:.6rem;border-radius:8px;border:2px solid;cursor:pointer;font-size:.95rem;font-weight:600;transition:.15s;">
-          💰 Ingreso
-        </button>
-        <button type="button" id="btn-egreso" onclick="setTipo('egreso')"
-          style="flex:1;padding:.6rem;border-radius:8px;border:2px solid;cursor:pointer;font-size:.95rem;font-weight:600;transition:.15s;">
-          💸 Egreso
-        </button>
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-plus-circle me-2"></i>Datos de la transacción
+      </div>
+      <div class="card-body">
+        <form method="POST" id="formTransaccion" novalidate>
+
+          <!-- Tipo -->
+          <input type="hidden" name="tipo" id="tipo" value="<?= h($datos['tipo']) ?>">
+          <div class="mb-4">
+            <label class="form-label d-block mb-2">TIPO DE TRANSACCIÓN</label>
+            <div class="tipo-selector">
+              <div class="tipo-option <?= $datos['tipo'] === 'ingreso' ? 'selected-income' : '' ?>"
+                   id="opt-ingreso" onclick="setTipo('ingreso')">
+                <span class="tipo-icon">💰</span>
+                <span class="tipo-label">Ingreso</span>
+              </div>
+              <div class="tipo-option <?= $datos['tipo'] === 'egreso' ? 'selected-expense' : '' ?>"
+                   id="opt-egreso" onclick="setTipo('egreso')">
+                <span class="tipo-icon">💸</span>
+                <span class="tipo-label">Egreso</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Categoría -->
+          <div class="mb-3">
+            <label for="categoria_id" class="form-label">CATEGORÍA</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-tag text-muted"></i>
+              </span>
+              <select class="form-select border-start-0" name="categoria_id" id="categoria_id" required
+                      style="border-radius:0 8px 8px 0">
+              </select>
+            </div>
+          </div>
+
+          <!-- Monto / Cantidad -->
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="monto" class="form-label">MONTO (Bs)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0 text-muted fw-600" style="font-size:.85rem">Bs</span>
+                <input type="number" class="form-control border-start-0" name="monto" id="monto"
+                       step="0.01" min="0.01" placeholder="0.00"
+                       value="<?= h($datos['monto']) ?>" required
+                       style="border-radius:0 8px 8px 0">
+              </div>
+            </div>
+            <div class="col-6">
+              <label for="cantidad" class="form-label">CANTIDAD</label>
+              <input type="number" class="form-control" name="cantidad" id="cantidad"
+                     step="0.001" min="0.001" placeholder="1.000"
+                     value="<?= h($datos['cantidad']) ?>" required>
+            </div>
+          </div>
+
+          <!-- Fecha -->
+          <div class="mb-4">
+            <label for="fecha" class="form-label">FECHA</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calendar3 text-muted"></i>
+              </span>
+              <input type="date" class="form-control border-start-0" name="fecha" id="fecha"
+                     value="<?= h($datos['fecha']) ?>" required
+                     max="<?= date('Y-m-d') ?>"
+                     style="border-radius:0 8px 8px 0">
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <button type="submit" class="btn btn-success w-100 py-2">
+            <i class="bi bi-check-lg me-2"></i>Registrar transacción
+          </button>
+        </form>
       </div>
     </div>
-
-    <!-- Categoría -->
-    <div class="form-group">
-      <label for="categoria_id">Categoría</label>
-      <select name="categoria_id" id="categoria_id" required>
-        <option value="">— Selecciona una categoría —</option>
-      </select>
-    </div>
-
-    <!-- Monto y Cantidad -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="monto">Monto (Bs)</label>
-        <input type="number" name="monto" id="monto"
-               step="0.01" min="0.01"
-               placeholder="0.00"
-               value="<?= h($datos['monto']) ?>" required>
-      </div>
-      <div class="form-group">
-        <label for="cantidad">Cantidad</label>
-        <input type="number" name="cantidad" id="cantidad"
-               step="0.001" min="0.001"
-               placeholder="1.000"
-               value="<?= h($datos['cantidad']) ?>" required>
-      </div>
-    </div>
-
-    <!-- Fecha -->
-    <div class="form-group">
-      <label for="fecha">Fecha</label>
-      <input type="date" name="fecha" id="fecha"
-             value="<?= h($datos['fecha']) ?>" required
-             max="<?= date('Y-m-d') ?>">
-    </div>
-
-    <button type="submit" class="btn btn-success btn-block">
-      Registrar transacción
-    </button>
-  </form>
+  </div>
 </div>
 
-<!-- Datos de categorías para JS -->
 <script>
-const CATEGORIAS = <?= json_encode($categorias_todas, JSON_UNESCAPED_UNICODE) ?>;
-const SELECCIONADA = <?= json_encode((string)$datos['categoria_id']) ?>;
+const SELECTED_CAT = <?= json_encode((string)$datos['categoria_id']) ?>;
 
-function actualizarCategorias() {
-  const tipo = document.querySelector('input[name="tipo"]:checked')?.value;
-  const sel  = document.getElementById('categoria_id');
-  sel.innerHTML = '<option value="">— Selecciona una categoría —</option>';
+async function loadCategorias(tipo, selectedId = '') {
+  const sel = document.getElementById('categoria_id');
+  sel.innerHTML = '<option value="">Cargando…</option>';
+  sel.disabled = true;
 
-  CATEGORIAS.filter(c => c.tipo === tipo).forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = c.nombre;
-    if (String(c.id) === SELECCIONADA) opt.selected = true;
-    sel.appendChild(opt);
-  });
+  try {
+    const form = new FormData();
+    form.append('action', 'categorias');
+    form.append('tipo', tipo);
+    const res = await fetch('api.php', { method: 'POST', body: form });
+    const json = await res.json();
+
+    if (json.ok && json.data.length) {
+      const target = selectedId || SELECTED_CAT;
+      sel.innerHTML = json.data.map(c =>
+        `<option value="${c.id}" ${String(c.id) === target ? 'selected' : ''}>${c.nombre}</option>`
+      ).join('');
+      // If nothing was pre-selected, pick the first option automatically
+      if (!target) sel.selectedIndex = 0;
+    } else {
+      sel.innerHTML = '<option value="">Sin categorías disponibles</option>';
+    }
+  } catch {
+    sel.innerHTML = '<option value="">Error al cargar</option>';
+  } finally {
+    sel.disabled = false;
+  }
 }
 
 function setTipo(tipo) {
   document.getElementById('tipo').value = tipo;
-  actualizarCategorias();
 
-  const btnIng = document.getElementById('btn-ingreso');
-  const btnEgr = document.getElementById('btn-egreso');
+  const optIng = document.getElementById('opt-ingreso');
+  const optEgr = document.getElementById('opt-egreso');
 
-  if (tipo === 'ingreso') {
-    btnIng.style.cssText += 'background:#e6f4ea;color:#188038;border-color:#188038;';
-    btnEgr.style.cssText += 'background:#fff;color:#5f6368;border-color:#dadce0;';
-  } else {
-    btnEgr.style.cssText += 'background:#fce8e6;color:#c5221f;border-color:#c5221f;';
-    btnIng.style.cssText += 'background:#fff;color:#5f6368;border-color:#dadce0;';
-  }
+  optIng.className = 'tipo-option' + (tipo === 'ingreso' ? ' selected-income'  : '');
+  optEgr.className = 'tipo-option' + (tipo === 'egreso'  ? ' selected-expense' : '');
+
+  loadCategorias(tipo);
 }
 
 // Init
-setTipo(document.getElementById('tipo').value || 'ingreso');
+loadCategorias(document.getElementById('tipo').value || 'ingreso');
 </script>
 
 <?php require '_layout_end.php'; ?>
