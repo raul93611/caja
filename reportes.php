@@ -21,7 +21,7 @@ if (!$rangoLibre) {
 }
 
 $stmtCat = $db->prepare('
-    SELECT c.nombre, t.tipo, SUM(t.monto) AS total, COUNT(*) AS num_trans
+    SELECT c.nombre, t.tipo, SUM(t.monto * t.cantidad) AS total, COUNT(*) AS num_trans
     FROM transacciones t JOIN categorias c ON c.id = t.categoria_id
     WHERE t.fecha BETWEEN ? AND ?
     GROUP BY c.id, t.tipo ORDER BY t.tipo, total DESC
@@ -30,8 +30,8 @@ $stmtCat->execute([$fecha_ini, $fecha_fin]);
 $porCategoria = $stmtCat->fetchAll();
 
 $stmtBal = $db->prepare('
-    SELECT COALESCE(SUM(CASE WHEN tipo="ingreso" THEN monto ELSE 0 END),0) AS ingresos,
-           COALESCE(SUM(CASE WHEN tipo="egreso"  THEN monto ELSE 0 END),0) AS egresos
+    SELECT COALESCE(SUM(CASE WHEN tipo="ingreso" THEN monto * cantidad ELSE 0 END),0) AS ingresos,
+           COALESCE(SUM(CASE WHEN tipo="egreso"  THEN monto * cantidad ELSE 0 END),0) AS egresos
     FROM transacciones WHERE fecha BETWEEN ? AND ?
 ');
 $stmtBal->execute([$fecha_ini, $fecha_fin]);
@@ -40,8 +40,8 @@ $balance_neto = $balance['ingresos'] - $balance['egresos'];
 
 $stmtDia = $db->prepare('
     SELECT fecha,
-           SUM(CASE WHEN tipo="ingreso" THEN monto ELSE 0 END) AS ingresos,
-           SUM(CASE WHEN tipo="egreso"  THEN monto ELSE 0 END) AS egresos
+           SUM(CASE WHEN tipo="ingreso" THEN monto * cantidad ELSE 0 END) AS ingresos,
+           SUM(CASE WHEN tipo="egreso"  THEN monto * cantidad ELSE 0 END) AS egresos
     FROM transacciones WHERE fecha BETWEEN ? AND ?
     GROUP BY fecha ORDER BY fecha
 ');

@@ -178,7 +178,12 @@ require '_layout.php';
               </td>
               <td class="text-muted-sm col-mobile-hide"><?= rtrim(rtrim(number_format($t['cantidad'],3),'0'),'.') ?></td>
               <td class="text-end <?= $t['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
-                <?= moneda($t['monto']) ?>
+                <?= moneda($t['monto'] * $t['cantidad']) ?>
+                <?php if ($t['cantidad'] != 1): ?>
+                  <div class="text-muted-sm" style="font-size:.7rem;font-weight:400">
+                    <?= moneda($t['monto']) ?> × <?= rtrim(rtrim(number_format($t['cantidad'],3),'0'),'.') ?>
+                  </div>
+                <?php endif; ?>
               </td>
               <td class="text-center">
                 <button class="btn btn-icon btn-outline-primary me-1"
@@ -187,7 +192,7 @@ require '_layout.php';
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-icon btn-outline-danger"
-                        onclick="confirmDelete(<?= $t['id'] ?>, '<?= h(addslashes($t['categoria'])) ?> — <?= moneda($t['monto']) ?>')"
+                        onclick="confirmDelete(<?= $t['id'] ?>, '<?= h(addslashes($t['categoria'])) ?> — <?= moneda($t['monto'] * $t['cantidad']) ?>')"
                         title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </button>

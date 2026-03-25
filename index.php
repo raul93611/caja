@@ -7,8 +7,8 @@ $hoy = date('Y-m-d');
 
 $stmt = $db->prepare('
     SELECT
-        COALESCE(SUM(CASE WHEN tipo="ingreso" THEN monto ELSE 0 END),0) AS ingresos,
-        COALESCE(SUM(CASE WHEN tipo="egreso"  THEN monto ELSE 0 END),0) AS egresos
+        COALESCE(SUM(CASE WHEN tipo="ingreso" THEN monto * cantidad ELSE 0 END),0) AS ingresos,
+        COALESCE(SUM(CASE WHEN tipo="egreso"  THEN monto * cantidad ELSE 0 END),0) AS egresos
     FROM transacciones WHERE fecha = ?
 ');
 $stmt->execute([$hoy]);
@@ -16,7 +16,7 @@ $kpi     = $stmt->fetch();
 $balance = $kpi['ingresos'] - $kpi['egresos'];
 
 $stmt = $db->prepare('
-    SELECT t.id, t.tipo, t.monto, t.fecha, c.nombre AS categoria
+    SELECT t.id, t.tipo, t.monto, t.cantidad, t.fecha, c.nombre AS categoria
     FROM transacciones t
     JOIN categorias c ON c.id = t.categoria_id
     ORDER BY t.creado_en DESC LIMIT 10
@@ -107,7 +107,7 @@ require '_layout.php';
                 <?php endif; ?>
               </td>
               <td class="text-end <?= $t['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
-                <?= moneda($t['monto']) ?>
+                <?= moneda($t['monto'] * $t['cantidad']) ?>
               </td>
             </tr>
             <?php endforeach; ?>

@@ -162,16 +162,22 @@ function renderEditForm(t, cats) {
         ${t.tipo === 'ingreso' ? optGroup(ingCats, t.categoria_id) : optGroup(egrCats, t.categoria_id)}
       </select>
     </div>
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-2">
       <div class="col-6">
-        <label class="form-label">Monto (Bs)</label>
-        <input type="number" class="form-control" id="edit-monto" value="${t.monto}" step="0.01" min="0.01">
+        <label class="form-label">Precio unitario (Bs)</label>
+        <input type="number" class="form-control" id="edit-monto" value="${t.monto}" step="0.01" min="0.01" oninput="calcEditTotal()">
       </div>
       <div class="col-6">
         <label class="form-label">Cantidad</label>
-        <input type="number" class="form-control" id="edit-cantidad" value="${t.cantidad}" step="0.001" min="0.001">
+        <input type="number" class="form-control" id="edit-cantidad" value="${t.cantidad}" step="0.001" min="0.001" oninput="calcEditTotal()">
       </div>
     </div>
+    <div id="edit-total-preview" class="mb-3">
+      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.5rem .9rem;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:.78rem;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:.04em;">Total</span>
+        <span id="edit-total-valor" style="font-size:1rem;font-weight:800;color:#059669;"></span>
+      </div>
+    </div>`;
     <div class="mb-3">
       <label class="form-label">Fecha</label>
       <input type="date" class="form-control" id="edit-fecha" value="${t.fecha}" max="${new Date().toISOString().split('T')[0]}">
@@ -186,6 +192,18 @@ function renderEditForm(t, cats) {
     const list = this.value === 'ingreso' ? ingCats : egrCats;
     document.getElementById('edit-categoria').innerHTML = optGroup(list, '');
   });
+
+  // Show initial total
+  calcEditTotal();
+}
+
+function calcEditTotal() {
+  const precio   = parseFloat(document.getElementById('edit-monto')?.value)   || 0;
+  const cantidad = parseFloat(document.getElementById('edit-cantidad')?.value) || 0;
+  const el = document.getElementById('edit-total-valor');
+  if (el && precio > 0 && cantidad > 0) {
+    el.textContent = 'Bs ' + (precio * cantidad).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

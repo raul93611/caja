@@ -114,23 +114,30 @@ require '_layout.php';
             </div>
           </div>
 
-          <!-- Monto / Cantidad -->
-          <div class="row g-3 mb-3">
+          <!-- Precio unitario / Cantidad -->
+          <div class="row g-3 mb-2">
             <div class="col-6">
-              <label for="monto" class="form-label">MONTO (Bs)</label>
+              <label for="monto" class="form-label">PRECIO UNITARIO (Bs)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0 text-muted fw-600" style="font-size:.85rem">Bs</span>
                 <input type="number" class="form-control border-start-0" name="monto" id="monto"
                        step="0.01" min="0.01" placeholder="0.00"
                        value="<?= h($datos['monto']) ?>" required
-                       style="border-radius:0 8px 8px 0">
+                       style="border-radius:0 8px 8px 0" oninput="calcTotal()">
               </div>
             </div>
             <div class="col-6">
               <label for="cantidad" class="form-label">CANTIDAD</label>
               <input type="number" class="form-control" name="cantidad" id="cantidad"
                      step="0.001" min="0.001" placeholder="1.000"
-                     value="<?= h($datos['cantidad']) ?>" required>
+                     value="<?= h($datos['cantidad']) ?>" required oninput="calcTotal()">
+            </div>
+          </div>
+          <!-- Total en vivo -->
+          <div id="total-preview" class="mb-3" style="display:none;">
+            <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.6rem .9rem;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:.8rem;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:.04em;">Total</span>
+              <span id="total-valor" style="font-size:1.05rem;font-weight:800;color:#059669;"></span>
             </div>
           </div>
 
@@ -216,6 +223,24 @@ function setTipo(tipo) {
 
 // Init
 loadCategorias(document.getElementById('tipo').value || 'ingreso');
+
+function calcTotal() {
+  const precio   = parseFloat(document.getElementById('monto').value)   || 0;
+  const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+  const preview  = document.getElementById('total-preview');
+  const valor    = document.getElementById('total-valor');
+
+  if (precio > 0 && cantidad > 0) {
+    const total = precio * cantidad;
+    valor.textContent = 'Bs ' + total.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    preview.style.display = '';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// Mostrar total si hay valores precargados (ej. al volver con error)
+calcTotal();
 </script>
 
 <?php require '_layout_end.php'; ?>
