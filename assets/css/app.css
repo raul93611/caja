@@ -53,6 +53,7 @@ body {
   top: 0; left: 0;
   width: var(--sidebar-w);
   height: 100vh;
+  height: 100dvh; /* accounts for mobile browser chrome */
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
@@ -121,6 +122,7 @@ body {
 #sidebar .sidebar-footer {
   margin-top: auto;
   padding: 1rem 1.1rem .9rem;
+  padding-bottom: calc(.9rem + env(safe-area-inset-bottom));
   border-top: 1px solid var(--sidebar-border);
 }
 
