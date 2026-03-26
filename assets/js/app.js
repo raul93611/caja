@@ -177,7 +177,7 @@ function renderEditForm(t, cats) {
         <span style="font-size:.78rem;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:.04em;">Total</span>
         <span id="edit-total-valor" style="font-size:1rem;font-weight:800;color:#059669;"></span>
       </div>
-    </div>`;
+    </div>
     <div class="mb-3">
       <label class="form-label">Fecha</label>
       <input type="date" class="form-control" id="edit-fecha" value="${t.fecha}" max="${new Date().toISOString().split('T')[0]}">
