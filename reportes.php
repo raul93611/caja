@@ -170,6 +170,41 @@ require '_layout.php';
 </div>
 <?php endif; ?>
 
+<style>
+@media (max-width: 767px) {
+  .table-categorias thead { display: none; }
+  .table-categorias tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: .55rem .85rem;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 0;
+  }
+  .table-categorias tbody tr:last-child { border-bottom: none; }
+  .table-categorias tbody tr td { display: block; border: none !important; padding: 0; }
+  .table-categorias td.col-cat  { flex: 1; min-width: 0; font-weight: 600; padding-right: .5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .table-categorias td.col-tipo { display: flex; align-items: center; }
+  .table-categorias td.col-num  { display: none !important; }
+  .table-categorias td.col-total {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: .3rem;
+    margin-top: .3rem;
+    border-top: 1px dashed #f1f5f9 !important;
+    font-size: .82rem;
+  }
+  .table-categorias td.col-total::before {
+    content: attr(data-num);
+    color: #94a3b8;
+    font-size: .75rem;
+    font-weight: 400;
+  }
+}
+</style>
+
 <!-- Tabla por categoría -->
 <div class="card">
   <div class="card-header"><i class="bi bi-table me-2"></i>Totales por categoría</div>
@@ -181,7 +216,7 @@ require '_layout.php';
       </div>
     <?php else: ?>
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-categorias">
           <thead>
             <tr>
               <th>Categoría</th>
@@ -193,16 +228,17 @@ require '_layout.php';
           <tbody>
             <?php foreach ($porCategoria as $row): ?>
             <tr>
-              <td class="fw-500"><?= h($row['nombre']) ?></td>
-              <td>
+              <td class="col-cat fw-500"><?= h($row['nombre']) ?></td>
+              <td class="col-tipo">
                 <?php if ($row['tipo'] === 'ingreso'): ?>
                   <span class="badge-income"><i class="bi bi-arrow-up"></i> Ingreso</span>
                 <?php else: ?>
                   <span class="badge-expense"><i class="bi bi-arrow-down"></i> Egreso</span>
                 <?php endif; ?>
               </td>
-              <td class="text-center text-muted-sm"><?= (int)$row['num_trans'] ?></td>
-              <td class="text-end <?= $row['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
+              <td class="col-num text-center text-muted-sm"><?= (int)$row['num_trans'] ?></td>
+              <td class="col-total text-end <?= $row['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>"
+                  data-num="<?= (int)$row['num_trans'] ?> movimiento<?= $row['num_trans'] != 1 ? 's' : '' ?>">
                 <?= moneda($row['total']) ?>
               </td>
             </tr>

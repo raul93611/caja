@@ -117,6 +117,55 @@ require '_layout.php';
   </div>
 </div>
 
+<style>
+@media (max-width: 767px) {
+  .table-movimientos thead { display: none; }
+  .table-movimientos tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: .55rem .85rem;
+    gap: 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .table-movimientos tbody tr:last-child { border-bottom: none; }
+  .table-movimientos tbody tr td {
+    display: block;
+    border: none !important;
+    padding: 0;
+  }
+  .table-movimientos td.col-cat   { flex: 1; min-width: 0; padding-right: .5rem; }
+  .table-movimientos td.col-tipo  { display: flex; align-items: center; }
+  .table-movimientos td.col-monto {
+    text-align: right;
+    font-weight: 700;
+    font-size: .88rem;
+    padding-left: .5rem;
+    min-width: 80px;
+  }
+  .table-movimientos td.col-monto .text-muted-sm { display: none; }
+  .table-movimientos td.col-acciones {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: .4rem;
+    padding-top: .35rem;
+    border-top: 1px dashed #f1f5f9 !important;
+    margin-top: .35rem;
+  }
+  .table-movimientos td.col-date,
+  .table-movimientos td.col-cant { display: none !important; }
+
+  /* inject date into category cell via data attr */
+  .table-movimientos td.col-cat .row-date {
+    display: block;
+    font-size: .7rem;
+    color: #94a3b8;
+    margin-top: .1rem;
+  }
+}
+</style>
+
 <!-- Tabla -->
 <div class="card">
   <div class="card-header d-flex align-items-center justify-content-between">
@@ -146,13 +195,13 @@ require '_layout.php';
       </div>
     <?php else: ?>
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-movimientos">
           <thead>
             <tr>
-              <th class="col-mobile-hide">Fecha</th>
+              <th>Fecha</th>
               <th>Categoría</th>
               <th>Tipo</th>
-              <th class="col-mobile-hide">Cant.</th>
+              <th>Cant.</th>
               <th class="text-end">Monto</th>
               <th class="text-center" style="width:80px">Acciones</th>
             </tr>
@@ -160,24 +209,25 @@ require '_layout.php';
           <tbody>
             <?php foreach ($transacciones as $t): ?>
             <tr id="row-<?= $t['id'] ?>">
-              <td class="text-muted-sm col-mobile-hide"><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
-              <td style="max-width:140px;">
+              <td class="text-muted-sm col-date"><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
+              <td class="col-cat">
                 <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= h($t['categoria']) ?></div>
                 <?php if ($t['detalles']): ?>
-                  <div class="text-muted-sm" style="font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;">
+                  <div class="text-muted-sm" style="font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                     <?= h($t['detalles']) ?>
                   </div>
                 <?php endif; ?>
+                <span class="row-date"><?= date('d/m/Y', strtotime($t['fecha'])) ?></span>
               </td>
-              <td>
+              <td class="col-tipo">
                 <?php if ($t['tipo'] === 'ingreso'): ?>
                   <span class="badge-income"><i class="bi bi-arrow-up"></i> Ingreso</span>
                 <?php else: ?>
                   <span class="badge-expense"><i class="bi bi-arrow-down"></i> Egreso</span>
                 <?php endif; ?>
               </td>
-              <td class="text-muted-sm col-mobile-hide"><?= rtrim(rtrim(number_format($t['cantidad'],3),'0'),'.') ?></td>
-              <td class="text-end <?= $t['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
+              <td class="text-muted-sm col-cant"><?= rtrim(rtrim(number_format($t['cantidad'],3),'0'),'.') ?></td>
+              <td class="col-monto <?= $t['tipo'] === 'ingreso' ? 'text-income' : 'text-expense' ?>">
                 <?= moneda($t['monto'] * $t['cantidad']) ?>
                 <?php if ($t['cantidad'] != 1): ?>
                   <div class="text-muted-sm" style="font-size:.7rem;font-weight:400">
@@ -185,8 +235,8 @@ require '_layout.php';
                   </div>
                 <?php endif; ?>
               </td>
-              <td class="text-center">
-                <button class="btn btn-icon btn-outline-primary me-1"
+              <td class="col-acciones text-center">
+                <button class="btn btn-icon btn-outline-primary"
                         onclick="openEditModal(<?= $t['id'] ?>)"
                         title="Editar">
                   <i class="bi bi-pencil"></i>

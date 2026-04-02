@@ -16,7 +16,7 @@ $kpi     = $stmt->fetch();
 $balance = $kpi['ingresos'] - $kpi['egresos'];
 
 $stmt = $db->prepare('
-    SELECT t.id, t.tipo, t.monto, t.cantidad, t.fecha, c.nombre AS categoria
+    SELECT t.id, t.tipo, t.monto, t.cantidad, t.fecha, t.detalles, c.nombre AS categoria
     FROM transacciones t
     JOIN categorias c ON c.id = t.categoria_id
     ORDER BY t.creado_en DESC LIMIT 10
@@ -98,7 +98,12 @@ require '_layout.php';
             <?php foreach ($ultimas as $t): ?>
             <tr>
               <td class="text-muted-sm col-mobile-hide"><?= date('d/m/Y', strtotime($t['fecha'])) ?></td>
-              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;"><?= h($t['categoria']) ?></td>
+              <td style="max-width:160px;">
+                <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= h($t['categoria']) ?></div>
+                <?php if (!empty($t['detalles'])): ?>
+                  <div class="text-muted" style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= h($t['detalles']) ?></div>
+                <?php endif; ?>
+              </td>
               <td>
                 <?php if ($t['tipo'] === 'ingreso'): ?>
                   <span class="badge-income"><i class="bi bi-arrow-up"></i> Ingreso</span>
