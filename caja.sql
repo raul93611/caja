@@ -58,7 +58,9 @@ CREATE TABLE IF NOT EXISTS `transacciones` (
 -- Datos: categorías predefinidas
 -- ------------------------------------------------------------
 INSERT INTO `categorias` (`nombre`, `tipo`, `subtipo`) VALUES
-  ('Venta de productos',  'ingreso', 'venta_producto'),
+  ('Alimento',            'ingreso', 'venta_producto'),
+  ('Ropa',                'ingreso', 'venta_producto'),
+  ('Productos',           'ingreso', 'venta_producto'),
   ('Compra de mercancía', 'egreso',  'compra_producto'),
   ('Electricidad',        'egreso',  'servicio'),
   ('Renta',               'egreso',  'servicio'),
@@ -82,4 +84,23 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ------------------------------------------------------------
 -- Si la base de datos ya existe, ejecuta solo esta línea:
 -- ALTER TABLE `transacciones` ADD COLUMN `detalles` TEXT NULL AFTER `cantidad`;
+-- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- Migración: reemplazar 'Venta de productos' por Alimento / Ropa / Productos
+-- Ejecutar en bases de datos existentes. En una importación limpia desde cero,
+-- los INSERT de arriba ya crean las nuevas categorías, así que este bloque es
+-- idempotente (los INSERT IGNORE y los UPDATE/DELETE no hacen nada si ya
+-- corrieron).
+-- ------------------------------------------------------------
+-- INSERT IGNORE INTO `categorias` (`nombre`, `tipo`, `subtipo`) VALUES
+--   ('Alimento',  'ingreso', 'venta_producto'),
+--   ('Ropa',      'ingreso', 'venta_producto'),
+--   ('Productos', 'ingreso', 'venta_producto');
+--
+-- UPDATE `transacciones`
+--   SET `categoria_id` = (SELECT `id` FROM `categorias` WHERE `nombre` = 'Productos' AND `tipo` = 'ingreso' LIMIT 1)
+--   WHERE `categoria_id` = (SELECT `id` FROM (SELECT `id` FROM `categorias` WHERE `nombre` = 'Venta de productos' AND `tipo` = 'ingreso' LIMIT 1) AS x);
+--
+-- DELETE FROM `categorias` WHERE `nombre` = 'Venta de productos' AND `tipo` = 'ingreso';
 -- ------------------------------------------------------------
