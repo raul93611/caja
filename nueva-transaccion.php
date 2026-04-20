@@ -194,11 +194,18 @@ async function loadCategorias(tipo, selectedId = '') {
 
     if (json.ok && json.data.length) {
       const target = selectedId || SELECTED_CAT;
-      sel.innerHTML = json.data.map(c =>
+      const options = json.data.map(c =>
         `<option value="${c.id}" ${String(c.id) === target ? 'selected' : ''}>${c.nombre}</option>`
       ).join('');
-      // If nothing was pre-selected, pick the first option automatically
-      if (!target) sel.selectedIndex = 0;
+      if (tipo === 'ingreso') {
+        // Force the user to pick one — no default selection for ingresos
+        const placeholderSelected = target ? '' : 'selected';
+        sel.innerHTML = `<option value="" disabled ${placeholderSelected}>Selecciona una categoría</option>` + options;
+      } else {
+        sel.innerHTML = options;
+        // For egresos, pre-select the first option if nothing was pre-selected
+        if (!target) sel.selectedIndex = 0;
+      }
     } else {
       sel.innerHTML = '<option value="">Sin categorías disponibles</option>';
     }

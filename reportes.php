@@ -55,10 +55,18 @@ foreach ($porDia as $d) {
     $data_egr[]    = (float)$d['egresos'];
 }
 
-$labels_cat = []; $data_cat = [];
-$colors_cat = ['#dc2626','#d97706','#059669','#6366f1','#7c3aed','#db2777','#0891b2','#65a30d'];
+$labels_cat_egr = []; $data_cat_egr = [];
+$labels_cat_ing = []; $data_cat_ing = [];
+$colors_egr = ['#dc2626','#d97706','#7c3aed','#db2777','#0891b2','#65a30d','#6366f1','#f59e0b'];
+$colors_ing = ['#059669','#10b981','#0d9488','#22c55e','#14b8a6','#84cc16','#06b6d4','#3b82f6'];
 foreach ($porCategoria as $row) {
-    if ($row['tipo'] === 'egreso') { $labels_cat[] = $row['nombre']; $data_cat[] = (float)$row['total']; }
+    if ($row['tipo'] === 'egreso') {
+        $labels_cat_egr[] = $row['nombre'];
+        $data_cat_egr[]   = (float)$row['total'];
+    } else {
+        $labels_cat_ing[] = $row['nombre'];
+        $data_cat_ing[]   = (float)$row['total'];
+    }
 }
 
 $periodos = ['diario'=>'Hoy','semanal'=>'Esta semana','mensual'=>'Este mes','anual'=>'Este año'];
@@ -138,11 +146,11 @@ require '_layout.php';
 </div>
 
 <!-- Gráficas -->
-<?php if (!empty($porDia) || !empty($data_cat)): ?>
+<?php if (!empty($porDia) || !empty($data_cat_ing) || !empty($data_cat_egr)): ?>
 <div class="row g-3 mb-3">
 
   <?php if (!empty($porDia)): ?>
-  <div class="col-12 col-lg-7">
+  <div class="col-12">
     <div class="card h-100">
       <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Ingresos vs Egresos por día</div>
       <div class="card-body">
@@ -154,13 +162,26 @@ require '_layout.php';
   </div>
   <?php endif; ?>
 
-  <?php if (!empty($data_cat)): ?>
-  <div class="col-12 col-lg-5">
+  <?php if (!empty($data_cat_ing)): ?>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Distribución de ingresos</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <div style="position:relative;height:240px;width:100%;max-width:320px;">
+          <canvas id="graficaPastelIng"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if (!empty($data_cat_egr)): ?>
+  <div class="col-12 col-lg-6">
     <div class="card h-100">
       <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Distribución de egresos</div>
       <div class="card-body d-flex align-items-center justify-content-center">
         <div style="position:relative;height:240px;width:100%;max-width:320px;">
-          <canvas id="graficaPastel"></canvas>
+          <canvas id="graficaPastelEgr"></canvas>
         </div>
       </div>
     </div>
@@ -286,24 +307,43 @@ new Chart(document.getElementById('graficaBarras').getContext('2d'), {
 });
 <?php endif; ?>
 
-<?php if (!empty($data_cat)): ?>
-new Chart(document.getElementById('graficaPastel').getContext('2d'), {
-  type: 'doughnut',
-  data: {
-    labels: <?= json_encode($labels_cat, JSON_UNESCAPED_UNICODE) ?>,
-    datasets: [{
-      data: <?= json_encode($data_cat) ?>,
-      backgroundColor: <?= json_encode(array_slice($colors_cat, 0, count($data_cat))) ?>,
-      hoverOffset: 10, borderWidth: 3, borderColor: '#fff',
-    }]
-  },
-  options: {
+<?php
+$doughnutOpts = "{
     responsive: true, maintainAspectRatio: false, cutout: '62%',
     plugins: {
       legend: { position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:12, font:{size:11,family:'Inter'} } },
       tooltip: { callbacks:{ label: c => ' ' + fmtBs(c.parsed) } }
     }
-  }
+  }";
+?>
+
+<?php if (!empty($data_cat_ing)): ?>
+new Chart(document.getElementById('graficaPastelIng').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: <?= json_encode($labels_cat_ing, JSON_UNESCAPED_UNICODE) ?>,
+    datasets: [{
+      data: <?= json_encode($data_cat_ing) ?>,
+      backgroundColor: <?= json_encode(array_slice($colors_ing, 0, count($data_cat_ing))) ?>,
+      hoverOffset: 10, borderWidth: 3, borderColor: '#fff',
+    }]
+  },
+  options: <?= $doughnutOpts ?>
+});
+<?php endif; ?>
+
+<?php if (!empty($data_cat_egr)): ?>
+new Chart(document.getElementById('graficaPastelEgr').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: <?= json_encode($labels_cat_egr, JSON_UNESCAPED_UNICODE) ?>,
+    datasets: [{
+      data: <?= json_encode($data_cat_egr) ?>,
+      backgroundColor: <?= json_encode(array_slice($colors_egr, 0, count($data_cat_egr))) ?>,
+      hoverOffset: 10, borderWidth: 3, borderColor: '#fff',
+    }]
+  },
+  options: <?= $doughnutOpts ?>
 });
 <?php endif; ?>
 </script>

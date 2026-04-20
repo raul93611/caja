@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Caja** — Financial management web app for a Bolivian grocery store. PHP + MySQL, no frameworks. All UI text is in Spanish. Currency is Bolivian boliviano (Bs).
 
+## Feature inventory
+
+| Feature | Status | Spec |
+|---|---|---|
+| More ingreso categories (Alimento/Ropa/Productos) + ingresos distribution chart | built | — |
+
+## Feature notes
+
+- **Ingreso categories**: the dropdown in `nueva-transaccion.php` has *no default* for ingresos (a disabled placeholder "Selecciona una categoría" is shown); egresos still auto-select the first option. The three ingreso categories all share `subtipo='venta_producto'`. The edit modal in `transacciones.php` uses `apiRequest('categorias_todas')`, so new categories propagate there automatically.
+- **`reportes.php` layout**: the bar chart is now full-width on its own row; the ingresos and egresos doughnut charts sit side-by-side below it (each `col-lg-6`). Charts only render when their dataset is non-empty. Ingresos chart uses a green color palette; egresos uses the original warm palette.
+
 ## Running the app
 
 Requires a PHP server (XAMPP, Laragon, or similar) pointing to this directory and a MySQL database.
